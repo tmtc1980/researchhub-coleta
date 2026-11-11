@@ -1,0 +1,864 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>ResearchHub Coleta</title>
+
+<meta name="description" content="Coleta de dados de pesquisa no celular, offline. Companheiro do ResearchHub.">
+<meta name="theme-color" content="#0f766e">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Coleta">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+
+<style>
+:root{
+  --teal:#0f766e; --teal-2:#0b5f58; --teal-fraco:#e6f4f2;
+  --bg:#f4f5f4; --card:#ffffff; --tinta:#16181a; --tinta-2:#5b6166; --tinta-3:#8b9196;
+  --linha:#e2e5e6; --campo:#ffffff;
+  --crit:#c4362f; --alerta:#b06a0d; --ok:#0d7a3f;
+  --raio:14px;
+  --safe-t:env(safe-area-inset-top,0px); --safe-b:env(safe-area-inset-bottom,0px);
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --teal:#15968b; --teal-2:#0f766e; --teal-fraco:#102b29;
+    --bg:#0f1113; --card:#1a1d20; --tinta:#f2f4f5; --tinta-2:#b2b9bd; --tinta-3:#7d858a;
+    --linha:#2b3034; --campo:#22262a;
+    --crit:#f0756c; --alerta:#e3a33c; --ok:#4ec07f;
+  }
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%}
+body{
+  background:var(--bg); color:var(--tinta);
+  font:16px/1.45 -apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased; overscroll-behavior-y:none;
+}
+button,input,select,textarea{font:inherit;color:inherit}
+button{touch-action:manipulation}
+/* 16px e acima evita que o iOS dê zoom sozinho ao focar o campo */
+input,textarea,select{font-size:16px}
+
+/* ── estrutura ─────────────────────────────────────────── */
+#topo{
+  position:sticky; top:0; z-index:40;
+  padding:calc(var(--safe-t) + 10px) 14px 10px;
+  background:var(--teal); color:#fff;
+  display:flex; align-items:center; gap:10px;
+}
+#topo .tit{font-weight:650;font-size:17px;line-height:1.2;flex:1;min-width:0;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#topo .sub{font-size:12px;opacity:.85;font-weight:400}
+.btopo{
+  background:rgba(255,255,255,.18); border:0; color:#fff;
+  min-width:44px; height:38px; border-radius:10px; font-size:15px; padding:0 12px;
+}
+.btopo:active{background:rgba(255,255,255,.3)}
+main{padding:14px 14px calc(var(--safe-b) + 24px); max-width:680px; margin:0 auto}
+.oculto{display:none !important}
+
+/* ── blocos ────────────────────────────────────────────── */
+.card{background:var(--card);border:1px solid var(--linha);border-radius:var(--raio);padding:14px;margin-bottom:12px}
+.b{
+  display:flex;align-items:center;justify-content:center;gap:8px;width:100%;
+  min-height:52px;border-radius:12px;border:1px solid var(--linha);
+  background:var(--card);font-weight:600;font-size:16px;padding:0 16px;
+}
+.b:active{transform:scale(.985)}
+.b.pri{background:var(--teal);border-color:var(--teal);color:#fff}
+.b.sec{background:var(--teal-fraco);border-color:transparent;color:var(--teal)}
+.b.perigo{color:var(--crit)}
+.b[disabled]{opacity:.4}
+.b.pequeno{min-height:42px;font-size:14px;font-weight:500}
+.linha-b{display:flex;gap:10px}
+.linha-b>.b{flex:1}
+
+.rotulo{font-size:13px;font-weight:600;color:var(--tinta-2);margin-bottom:6px;display:block}
+.ajuda{font-size:12px;color:var(--tinta-3);margin-top:5px;line-height:1.4}
+.pill{display:inline-flex;align-items:center;gap:5px;border-radius:999px;
+  padding:3px 9px;font-size:12px;font-weight:600;border:1px solid currentColor}
+
+/* ── campos ────────────────────────────────────────────── */
+.campo{margin-bottom:18px}
+.entrada{
+  width:100%;min-height:52px;border-radius:12px;border:1px solid var(--linha);
+  background:var(--campo);padding:0 14px;
+}
+textarea.entrada{padding:12px 14px;min-height:88px;line-height:1.45;resize:vertical}
+.entrada:focus{outline:2px solid var(--teal);outline-offset:-1px}
+.com-unidade{display:flex;align-items:center;gap:8px}
+.com-unidade .entrada{flex:1}
+.unidade{font-size:14px;color:var(--tinta-3);white-space:nowrap;font-weight:500}
+
+.opcoes{display:flex;flex-direction:column;gap:8px}
+.opcoes.duplo{flex-direction:row}
+.opcoes.duplo .op{flex:1}
+.op{
+  display:flex;align-items:center;gap:10px;min-height:52px;
+  border:1.5px solid var(--linha);border-radius:12px;background:var(--campo);
+  padding:8px 14px;text-align:left;font-size:16px;font-weight:500;width:100%;
+}
+.op .marca{
+  width:22px;height:22px;flex:0 0 22px;border-radius:50%;
+  border:2px solid var(--tinta-3);display:grid;place-items:center;
+}
+.op.multi .marca{border-radius:6px}
+.op[aria-pressed="true"]{border-color:var(--teal);background:var(--teal-fraco);color:var(--teal)}
+.op[aria-pressed="true"] .marca{border-color:var(--teal);background:var(--teal)}
+.op[aria-pressed="true"] .marca::after{content:'';width:9px;height:9px;border-radius:50%;background:#fff}
+.op.multi[aria-pressed="true"] .marca::after{
+  content:'';width:5px;height:10px;border-radius:0;background:transparent;
+  border:solid #fff;border-width:0 2.5px 2.5px 0;transform:rotate(42deg) translate(-1px,-1px)
+}
+
+/* ── progresso ─────────────────────────────────────────── */
+#barra{height:4px;background:var(--linha);position:sticky;top:0;z-index:39}
+#barra i{display:block;height:100%;background:var(--teal);transition:width .25s}
+.passo{font-size:12px;color:var(--tinta-3);text-align:center;margin:10px 0 4px;font-weight:600;
+  text-transform:uppercase;letter-spacing:.04em}
+#rodape{
+  position:sticky;bottom:0;z-index:40;background:var(--bg);
+  border-top:1px solid var(--linha);
+  padding:10px 14px calc(var(--safe-b) + 10px);
+  display:flex;gap:10px;max-width:680px;margin:0 auto;
+}
+#rodape .b{flex:1}
+
+/* ── avisos ────────────────────────────────────────────── */
+.aviso{border-radius:12px;padding:11px 13px;font-size:13.5px;line-height:1.45;margin-bottom:12px;
+  border:1px solid currentColor}
+.aviso b{display:block;margin-bottom:3px}
+.aviso.a{color:var(--alerta)} .aviso.c{color:var(--crit)} .aviso.i{color:var(--teal)}
+.aviso .txt{color:var(--tinta-2)}
+
+/* ── listas ────────────────────────────────────────────── */
+.item{display:flex;align-items:center;gap:12px;padding:13px 14px;border-bottom:1px solid var(--linha);width:100%;
+  background:none;border-left:0;border-right:0;border-top:0;text-align:left}
+.item:last-child{border-bottom:0}
+.item .cresce{flex:1;min-width:0}
+.item .n{font-weight:650;font-size:15px}
+.item .d{font-size:12.5px;color:var(--tinta-3);margin-top:2px;
+  overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.lista{background:var(--card);border:1px solid var(--linha);border-radius:var(--raio);
+  overflow:hidden;margin-bottom:12px}
+.vazio{text-align:center;padding:36px 20px;color:var(--tinta-3)}
+.vazio .ic{font-size:40px;margin-bottom:10px}
+
+#toast{
+  position:fixed;left:50%;transform:translateX(-50%);
+  bottom:calc(var(--safe-b) + 84px);z-index:90;
+  background:var(--tinta);color:var(--bg);padding:11px 18px;border-radius:999px;
+  font-size:14px;font-weight:600;opacity:0;transition:opacity .25s;pointer-events:none;
+  max-width:calc(100vw - 40px);text-align:center;
+}
+.resumo-linha{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--linha);font-size:14px}
+.resumo-linha:last-child{border-bottom:0}
+.resumo-linha .k{color:var(--tinta-3);flex:0 0 45%}
+.resumo-linha .v{font-weight:600;flex:1;word-break:break-word}
+.resumo-linha .v.falta{color:var(--crit);font-weight:500}
+</style>
+</head>
+<body>
+
+<div id="barra" class="oculto"><i style="width:0%"></i></div>
+<header id="topo">
+  <button class="btopo oculto" id="bvoltar" onclick="voltar()">‹</button>
+  <div class="cresce" style="flex:1;min-width:0">
+    <div class="tit" id="titulo">ResearchHub Coleta</div>
+    <div class="sub" id="subtitulo">Nenhuma ficha carregada</div>
+  </div>
+  <button class="btopo oculto" id="bacao"></button>
+</header>
+
+<main id="tela"></main>
+<div id="rodape" class="oculto"></div>
+<div id="toast"></div>
+
+<script>
+'use strict';
+
+/* ══════════════════════════════════════════════════════════
+   ARMAZENAMENTO
+   Tudo fica no próprio aparelho. Nada é enviado para servidor
+   nenhum — o app não tem para onde enviar.
+   ══════════════════════════════════════════════════════════ */
+const DB = {
+  fichas:  () => ler('rhc_fichas', []),
+  setFichas: v => grava('rhc_fichas', v),
+  casos:   fid => ler('rhc_casos_' + fid, []),
+  setCasos: (fid, v) => grava('rhc_casos_' + fid, v),
+  rascunho: fid => ler('rhc_rasc_' + fid, null),
+  setRascunho: (fid, v) => v ? grava('rhc_rasc_' + fid, v) : localStorage.removeItem('rhc_rasc_' + fid),
+  apagarFicha: fid => {
+    DB.setFichas(DB.fichas().filter(f => f.id !== fid));
+    localStorage.removeItem('rhc_casos_' + fid);
+    localStorage.removeItem('rhc_rasc_' + fid);
+  }
+};
+function ler(k, padrao){ try{ const v = localStorage.getItem(k); return v ? JSON.parse(v) : padrao; }catch(e){ return padrao; } }
+function grava(k, v){
+  try{ localStorage.setItem(k, JSON.stringify(v)); return true; }
+  catch(e){
+    alert('O armazenamento do aparelho está cheio ou bloqueado. Envie os casos pendentes agora, antes de continuar coletando.');
+    return false;
+  }
+}
+
+const uid = () => Math.random().toString(36).slice(2,8) + Date.now().toString(36);
+const hoje = () => new Date().toISOString().slice(0,10);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const norm = s => String(s ?? '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'').trim();
+
+let S = { tela:'fichas', fid:null, grupo:0, dados:{}, editando:null };
+
+/* ══════════════════════════════════════════════════════════
+   NAVEGAÇÃO
+   ══════════════════════════════════════════════════════════ */
+function ir(tela, extra){
+  S.tela = tela;
+  if (extra) Object.assign(S, extra);
+  window.scrollTo(0,0);
+  render();
+}
+function voltar(){
+  if (S.tela === 'coleta' || S.tela === 'revisao'){
+    if (S.tela === 'revisao') return ir('coleta');
+    salvarRascunho();
+    return ir('casos');
+  }
+  if (S.tela === 'casos' || S.tela === 'enviar') return ir('fichas', {fid:S.fid});
+  ir('fichas');
+}
+function toast(msg){
+  const t = document.getElementById('toast');
+  t.textContent = msg; t.style.opacity = '1';
+  clearTimeout(t._id); t._id = setTimeout(()=> t.style.opacity='0', 2600);
+}
+
+const fichaAtual = () => DB.fichas().find(f => f.id === S.fid) || null;
+
+/** Campos agrupados pelo grupo da ficha, na ordem original. */
+function grupos(ficha){
+  const map = new Map();
+  [...ficha.schema].sort((a,b)=>(a.order??0)-(b.order??0)).forEach(f=>{
+    const g = (f.group||'').trim() || 'Geral';
+    if (!map.has(g)) map.set(g, []);
+    map.get(g).push(f);
+  });
+  return [...map.entries()].map(([nome,campos])=>({nome,campos}));
+}
+
+const pendentes = fid => DB.casos(fid).filter(c => !c.exportado_em).length;
+
+/* ══════════════════════════════════════════════════════════
+   RENDERIZAÇÃO
+   ══════════════════════════════════════════════════════════ */
+function render(){
+  const barra = document.getElementById('barra');
+  const rodape = document.getElementById('rodape');
+  const bvoltar = document.getElementById('bvoltar');
+  const bacao = document.getElementById('bacao');
+  barra.classList.add('oculto'); rodape.classList.add('oculto');
+  bvoltar.classList.toggle('oculto', S.tela === 'fichas');
+  bacao.classList.add('oculto'); bacao.onclick = null;
+  ({fichas:telaFichas, casos:telaCasos, coleta:telaColeta, revisao:telaRevisao, enviar:telaEnviar}[S.tela] || telaFichas)();
+}
+function cabecalho(tit, sub){
+  document.getElementById('titulo').textContent = tit;
+  document.getElementById('subtitulo').textContent = sub;
+}
+function acaoTopo(texto, fn){
+  const b = document.getElementById('bacao');
+  b.textContent = texto; b.onclick = fn; b.classList.remove('oculto');
+}
+const pinta = html => { document.getElementById('tela').innerHTML = html; };
+function rodape(html){
+  const r = document.getElementById('rodape');
+  r.innerHTML = html; r.classList.remove('oculto');
+}
+
+/* ── Tela 1: fichas ─────────────────────────────────────── */
+function telaFichas(){
+  const fichas = DB.fichas();
+  cabecalho('ResearchHub Coleta', fichas.length ? `${fichas.length} ficha${fichas.length>1?'s':''} no aparelho` : 'Nenhuma ficha carregada');
+
+  const totalPend = fichas.reduce((a,f)=>a+pendentes(f.id),0);
+  let h = '';
+
+  if (totalPend > 0){
+    h += `<div class="aviso a"><b>⚠️ ${totalPend} caso${totalPend>1?'s':''} ainda não enviado${totalPend>1?'s':''}</b>
+      <span class="txt">Envie ao fim do turno. O armazenamento do navegador do celular não é lugar seguro para guardar coleta de pesquisa.</span></div>`;
+  }
+
+  if (!fichas.length){
+    h += `<div class="vazio">
+      <div class="ic">📋</div>
+      <p style="margin:0 0 6px;font-weight:600;color:var(--tinta)">Comece carregando uma ficha</p>
+      <p style="margin:0;font-size:14px">No computador, abra o ResearchHub, clique em <b>Exportar JSON</b> no estudo e mande o arquivo para o celular — WhatsApp para você mesmo, e‑mail ou iCloud Drive.</p>
+    </div>`;
+  } else {
+    h += '<div class="lista">';
+    fichas.forEach(f=>{
+      const p = pendentes(f.id), t = DB.casos(f.id).length;
+      h += `<button class="item" onclick="ir('casos',{fid:'${f.id}'})">
+        <div class="cresce">
+          <div class="n">${esc(f.titulo)}</div>
+          <div class="d">${f.schema.length} campos · ${t} caso${t===1?'':'s'}${p?` · <b style="color:var(--alerta)">${p} a enviar</b>`:''}</div>
+        </div>
+        <span style="color:var(--tinta-3);font-size:22px">›</span>
+      </button>`;
+    });
+    h += '</div>';
+  }
+
+  h += `<button class="b pri" onclick="abrirArquivo()">＋ Carregar ficha do computador</button>
+    <div class="ajuda" style="text-align:center;margin-top:10px">Aceita o arquivo <b>.rhub.json</b> exportado pelo ResearchHub. Os casos que vierem dentro dele são ignorados — só a ficha é aproveitada.</div>
+    <div style="margin-top:22px;text-align:center">
+      <button class="b pequeno" style="border:0;background:none;color:var(--tinta-3)" onclick="ir('sobre')">Como funciona</button>
+    </div>
+    <input type="file" id="arq" accept="application/json,.json" style="display:none" onchange="lerArquivo(this)">`;
+
+  if (S.tela === 'sobre') return telaSobre();
+  pinta(h);
+}
+
+function telaSobre(){
+  cabecalho('Como funciona', 'Ida e volta com o computador');
+  pinta(`
+  <div class="card">
+    <h3 style="margin:0 0 10px;font-size:16px">1 · Levar a ficha para o celular</h3>
+    <p style="margin:0;font-size:14px;color:var(--tinta-2);line-height:1.55">
+      No ResearchHub do computador, no card do estudo, toque em <b>Exportar JSON</b>. Mande o arquivo
+      para você mesmo (WhatsApp, e‑mail, iCloud Drive) e abra aqui em <b>Carregar ficha</b>.
+      Só precisa fazer isso uma vez por estudo.
+    </p>
+  </div>
+  <div class="card">
+    <h3 style="margin:0 0 10px;font-size:16px">2 · Coletar</h3>
+    <p style="margin:0;font-size:14px;color:var(--tinta-2);line-height:1.55">
+      Funciona sem internet. O caso em andamento é salvo sozinho — se o telefone desligar ou
+      você sair no meio, ele continua aqui.
+    </p>
+  </div>
+  <div class="card">
+    <h3 style="margin:0 0 10px;font-size:16px">3 · Trazer os casos de volta</h3>
+    <p style="margin:0 0 10px;font-size:14px;color:var(--tinta-2);line-height:1.55">
+      Em <b>Enviar</b>, o app gera um arquivo <b>CSV</b>. No computador, abra o ResearchHub,
+      selecione o estudo e use o botão <b>Importar CSV</b> — os casos entram no estudo que já existe,
+      somando aos anteriores.
+    </p>
+    <div class="aviso c" style="margin:0"><b>Não use “Importar estudo”</b>
+      <span class="txt">Aquele botão é para arquivo .json e cria um estudo duplicado, separado do seu. O caminho certo é <b>Importar CSV</b>, dentro do card do estudo.</span></div>
+  </div>
+  <div class="card">
+    <h3 style="margin:0 0 10px;font-size:16px">Onde ficam os dados</h3>
+    <p style="margin:0;font-size:14px;color:var(--tinta-2);line-height:1.55">
+      Dentro deste aparelho, e só. O app não tem servidor nem conta — não existe para onde
+      mandar. Por isso mesmo: <b>exporte ao fim de cada turno</b>. Limpar os dados do site, ou
+      o iPhone liberar espaço sozinho, apaga o que não foi enviado.
+    </p>
+  </div>`);
+  rodape(`<button class="b pri" onclick="ir('fichas')">Entendi</button>`);
+}
+
+/* ── Carregar ficha ─────────────────────────────────────── */
+function abrirArquivo(){ document.getElementById('arq').click(); }
+
+function lerArquivo(input){
+  const f = input.files && input.files[0];
+  input.value = '';
+  if (!f) return;
+  const fr = new FileReader();
+  fr.onload = e => {
+    try { receberFicha(JSON.parse(e.target.result), f.name); }
+    catch(err){ alert('Não consegui ler este arquivo.\n\nEle precisa ser o .rhub.json que o ResearchHub gera no botão "Exportar JSON".'); }
+  };
+  fr.onerror = () => alert('Falha ao abrir o arquivo.');
+  fr.readAsText(f);
+}
+
+function receberFicha(pkg, nomeArq){
+  if (!pkg || !Array.isArray(pkg.schema) || !pkg.schema.length)
+    throw new Error('sem schema');
+
+  const titulo = (pkg.study && pkg.study.title) ? String(pkg.study.title) : nomeArq.replace(/\.rhub\.json$/i,'');
+  const existente = DB.fichas().find(x => norm(x.titulo) === norm(titulo));
+  const qtdCasos = Array.isArray(pkg.records) ? pkg.records.length : 0;
+
+  if (existente){
+    const n = DB.casos(existente.id).length;
+    const ok = confirm(
+      `Já existe a ficha "${existente.titulo}" neste aparelho, com ${n} caso${n===1?'':'s'}.\n\n` +
+      `OK = atualizar a ficha e MANTER os casos\nCancelar = carregar como ficha separada`
+    );
+    if (ok){
+      const fichas = DB.fichas();
+      const i = fichas.findIndex(x => x.id === existente.id);
+      fichas[i] = {...existente, titulo, schema: pkg.schema, atualizada_em: hoje()};
+      DB.setFichas(fichas);
+      toast('Ficha atualizada — casos preservados');
+      return ir('casos', {fid: existente.id});
+    }
+  }
+
+  const ficha = {
+    id: uid(), titulo,
+    area: (pkg.study && pkg.study.area) || '',
+    schema: pkg.schema,
+    importada_em: hoje()
+  };
+  DB.setFichas([...DB.fichas(), ficha]);
+  toast(qtdCasos ? `Ficha carregada (${qtdCasos} casos do arquivo ignorados)` : 'Ficha carregada');
+  ir('casos', {fid: ficha.id});
+}
+
+/* ── Tela 2: casos da ficha ─────────────────────────────── */
+function telaCasos(){
+  const ficha = fichaAtual();
+  if (!ficha) return ir('fichas');
+  const casos = DB.casos(ficha.id);
+  const p = pendentes(ficha.id);
+  const rasc = DB.rascunho(ficha.id);
+
+  cabecalho(ficha.titulo, `${casos.length} caso${casos.length===1?'':'s'}${p?` · ${p} a enviar`:''}`);
+  acaoTopo('⋯', () => menuFicha(ficha));
+
+  let h = '';
+  if (rasc && Object.keys(rasc.dados||{}).length){
+    h += `<div class="aviso i"><b>📝 Há um caso em andamento</b>
+      <span class="txt">Você parou no meio de um preenchimento. Continuar de onde parou?</span>
+      <div class="linha-b" style="margin-top:10px">
+        <button class="b sec pequeno" onclick="descartarRascunho()">Descartar</button>
+        <button class="b pri pequeno" onclick="retomarRascunho()">Continuar</button>
+      </div></div>`;
+  }
+
+  h += `<button class="b pri" onclick="novoCaso()" style="margin-bottom:12px">＋ Novo caso</button>`;
+
+  if (p > 0){
+    h += `<button class="b sec" onclick="ir('enviar')" style="margin-bottom:14px">
+      ⬆️ Enviar ${p} caso${p>1?'s':''} para o computador</button>`;
+  } else if (casos.length){
+    h += `<button class="b pequeno" onclick="ir('enviar')" style="margin-bottom:14px">
+      Enviar novamente (todos os ${casos.length})</button>`;
+  }
+
+  if (!casos.length){
+    h += `<div class="vazio"><div class="ic">🩺</div>
+      <p style="margin:0;font-size:14px">Nenhum caso ainda. Toque em <b>Novo caso</b> para começar.</p></div>`;
+  } else {
+    h += '<div class="lista">';
+    [...casos].reverse().forEach(c => {
+      const ident = identificador(ficha, c) || `Caso ${c.num}`;
+      const env = c.exportado_em;
+      h += `<button class="item" onclick="editarCaso('${c.lid}')">
+        <span class="pill" style="color:${env?'var(--ok)':'var(--alerta)'};flex:0 0 auto">${env?'enviado':'a enviar'}</span>
+        <div class="cresce">
+          <div class="n">${esc(ident)}</div>
+          <div class="d">${c.incompleto?'⚠️ campos obrigatórios em falta · ':''}${esc(c.criado_em)}</div>
+        </div>
+        <span style="color:var(--tinta-3);font-size:22px">›</span>
+      </button>`;
+    });
+    h += '</div>';
+  }
+  pinta(h);
+}
+
+/** Primeiro campo de texto que pareça identificar o paciente. */
+function campoIdent(ficha){
+  return ficha.schema.find(f => f.type === 'text' && /prontu|registro|matricula|identific|nome/.test(norm(f.label))) || null;
+}
+function identificador(ficha, caso){
+  const f = campoIdent(ficha);
+  return f ? (caso.data[f.id] || '') : '';
+}
+
+function menuFicha(ficha){
+  const n = DB.casos(ficha.id).length, p = pendentes(ficha.id);
+  const op = prompt(
+    `"${ficha.titulo}"\n${n} caso${n===1?'':'s'} (${p} a enviar)\n\n` +
+    `Digite o número da opção:\n1 — Ver como funciona\n2 — Remover esta ficha do celular`, '');
+  if (op === '1') ir('sobre');
+  if (op === '2'){
+    if (p > 0 && !confirm(`ATENÇÃO: ${p} caso${p>1?'s':''} ainda não foi enviado ao computador.\n\nRemover mesmo assim? Isso não tem como desfazer.`)) return;
+    if (!confirm(`Remover "${ficha.titulo}" e seus ${n} caso${n===1?'':'s'} deste aparelho?`)) return;
+    DB.apagarFicha(ficha.id);
+    toast('Ficha removida');
+    ir('fichas', {fid:null});
+  }
+}
+
+/* ── Rascunho ───────────────────────────────────────────── */
+function salvarRascunho(){
+  if (!S.fid || S.editando) return;
+  const temAlgo = Object.values(S.dados).some(v => v !== null && v !== '' && !(Array.isArray(v) && !v.length));
+  DB.setRascunho(S.fid, temAlgo ? {dados:S.dados, grupo:S.grupo} : null);
+}
+function retomarRascunho(){
+  const r = DB.rascunho(S.fid);
+  if (!r) return;
+  ir('coleta', {dados:r.dados||{}, grupo:r.grupo||0, editando:null});
+}
+function descartarRascunho(){
+  if (!confirm('Descartar o caso em andamento?')) return;
+  DB.setRascunho(S.fid, null); render();
+}
+
+function novoCaso(){
+  const r = DB.rascunho(S.fid);
+  if (r && Object.keys(r.dados||{}).length && !confirm('Há um caso em andamento que será descartado. Continuar?')) return;
+  DB.setRascunho(S.fid, null);
+  ir('coleta', {dados:{}, grupo:0, editando:null});
+}
+function editarCaso(lid){
+  const c = DB.casos(S.fid).find(x => x.lid === lid);
+  if (!c) return;
+  ir('coleta', {dados:{...c.data}, grupo:0, editando:lid});
+}
+
+/* ── Tela 3: coleta (assistente) ────────────────────────── */
+function telaColeta(){
+  const ficha = fichaAtual();
+  if (!ficha) return ir('fichas');
+  const gs = grupos(ficha);
+  S.grupo = Math.max(0, Math.min(S.grupo, gs.length - 1));
+  const g = gs[S.grupo];
+
+  cabecalho(S.editando ? 'Editando caso' : 'Novo caso', `${ficha.titulo}`);
+  const barra = document.getElementById('barra');
+  barra.classList.remove('oculto');
+  barra.firstElementChild.style.width = `${((S.grupo+1)/gs.length)*100}%`;
+
+  let h = `<div class="passo">Parte ${S.grupo+1} de ${gs.length} · ${esc(g.nome)}</div>`;
+  h += g.campos.map(f => campoHTML(f)).join('');
+  pinta(h);
+
+  const ultimo = S.grupo === gs.length - 1;
+  rodape(`
+    <button class="b" onclick="passo(-1)" ${S.grupo===0?'disabled':''}>Anterior</button>
+    <button class="b pri" onclick="${ultimo?"ir('revisao')":'passo(1)'}">${ultimo?'Revisar':'Próximo'}</button>`);
+}
+
+function passo(d){
+  S.grupo += d;
+  salvarRascunho();
+  ir('coleta');
+}
+
+function campoHTML(f){
+  const v = S.dados[f.id];
+  const obrig = f.required ? ' <span style="color:var(--crit)">*</span>' : '';
+  const un = f.unit ? `<span class="unidade">${esc(f.unit)}</span>` : '';
+  let corpo = '';
+
+  if (f.type === 'number' || f.type === 'scale'){
+    const faixa = (f.min != null || f.max != null)
+      ? `<div class="ajuda">Esperado entre ${f.min ?? '—'} e ${f.max ?? '—'}${f.unit?' '+esc(f.unit):''}</div>` : '';
+    const fora = (v != null && v !== '') && ((f.min != null && +v < f.min) || (f.max != null && +v > f.max));
+    corpo = `<div class="com-unidade">
+        <input class="entrada" type="text" inputmode="decimal" autocomplete="off"
+               value="${esc(v ?? '')}" oninput="setNum('${f.id}',this.value)" placeholder="—">
+        ${un}</div>${faixa}
+      ${fora?'<div class="ajuda" style="color:var(--alerta)">⚠️ Fora da faixa esperada — confira se não houve erro de digitação.</div>':''}`;
+  }
+  else if (f.type === 'date'){
+    corpo = `<input class="entrada" type="date" value="${esc(v ?? '')}" onchange="setVal('${f.id}',this.value)">`;
+  }
+  else if (f.type === 'boolean'){
+    corpo = `<div class="opcoes duplo">
+        <button class="op" aria-pressed="${v===true}" onclick="setBool('${f.id}',true)"><span class="marca"></span>Sim</button>
+        <button class="op" aria-pressed="${v===false}" onclick="setBool('${f.id}',false)"><span class="marca"></span>Não</button>
+      </div>${v===true||v===false?`<button class="b pequeno" style="border:0;background:none;color:var(--tinta-3);min-height:34px;margin-top:4px" onclick="setVal('${f.id}',null)">limpar resposta</button>`:''}`;
+  }
+  else if (f.type === 'select'){
+    const ops = f.options || [];
+    corpo = `<div class="opcoes">` + ops.map(o =>
+      `<button class="op" aria-pressed="${v===o}" onclick="setSel('${f.id}',${JSON.stringify(o).replace(/"/g,'&quot;')})"><span class="marca"></span>${esc(o)}</button>`
+    ).join('') + `</div>`;
+  }
+  else if (f.type === 'multiselect'){
+    const arr = Array.isArray(v) ? v : [];
+    corpo = `<div class="opcoes">` + (f.options||[]).map(o =>
+      `<button class="op multi" aria-pressed="${arr.includes(o)}" onclick="toggleMulti('${f.id}',${JSON.stringify(o).replace(/"/g,'&quot;')})"><span class="marca"></span>${esc(o)}</button>`
+    ).join('') + `</div><div class="ajuda">Pode marcar mais de uma.</div>`;
+  }
+  else {
+    const longo = /observ|coment|descri|hist/.test(norm(f.label));
+    corpo = longo
+      ? `<textarea class="entrada" oninput="setVal('${f.id}',this.value)" placeholder="—">${esc(v ?? '')}</textarea>`
+      : `<input class="entrada" type="text" autocomplete="off" value="${esc(v ?? '')}" oninput="setVal('${f.id}',this.value)" placeholder="—">`;
+  }
+
+  return `<div class="campo"><label class="rotulo">${esc(f.label)}${obrig}</label>${corpo}</div>`;
+}
+
+/* Alterações de valor não re-renderizam a tela inteira enquanto se digita —
+   só os campos com botões precisam repintar. */
+function setVal(id, v){ S.dados[id] = (v === '' ? null : v); salvarRascunho(); }
+function setNum(id, v){ const n = String(v).replace(',','.'); S.dados[id] = (v==='' ? null : (isNaN(parseFloat(n)) ? null : parseFloat(n))); salvarRascunho(); }
+function setBool(id, v){ S.dados[id] = (S.dados[id] === v ? null : v); salvarRascunho(); ir('coleta'); }
+function setSel(id, o){ S.dados[id] = (S.dados[id] === o ? null : o); salvarRascunho(); ir('coleta'); }
+function toggleMulti(id, o){
+  const arr = Array.isArray(S.dados[id]) ? [...S.dados[id]] : [];
+  const i = arr.indexOf(o);
+  if (i >= 0) arr.splice(i,1); else arr.push(o);
+  S.dados[id] = arr; salvarRascunho(); ir('coleta');
+}
+
+/* ── Tela 4: revisão ────────────────────────────────────── */
+function preenchido(v){ return !(v === null || v === undefined || v === '' || (Array.isArray(v) && !v.length)); }
+
+function telaRevisao(){
+  const ficha = fichaAtual();
+  if (!ficha) return ir('fichas');
+  cabecalho('Revisar', ficha.titulo);
+
+  const faltando = ficha.schema.filter(f => f.required && !preenchido(S.dados[f.id]));
+  const ident = campoIdent(ficha);
+  const valorIdent = ident ? S.dados[ident.id] : null;
+  const repetido = valorIdent ? DB.casos(ficha.id).find(c =>
+      c.lid !== S.editando && norm(c.data[ident.id]) === norm(valorIdent)) : null;
+
+  let h = '';
+  if (faltando.length){
+    h += `<div class="aviso a"><b>⚠️ ${faltando.length} campo${faltando.length>1?'s':''} obrigatório${faltando.length>1?'s':''} em branco</b>
+      <span class="txt">${faltando.map(f=>esc(f.label)).join(' · ')}<br><br>
+      Dá para salvar assim mesmo — o caso fica marcado como incompleto e você completa depois.</span></div>`;
+  }
+  if (repetido){
+    h += `<div class="aviso c"><b>⛔ ${esc(ident.label)} repetido neste aparelho</b>
+      <span class="txt">"${esc(valorIdent)}" já foi coletado aqui. Reinternação legítima, ou é duplicata?
+      Duplicata infla o n e quebra a independência das observações.</span></div>`;
+  }
+  h += `<div class="aviso i"><b>Confira antes de salvar</b>
+    <span class="txt">O celular não conhece os casos que já estão no computador — essa conferência acontece na importação.</span></div>`;
+
+  h += '<div class="card">';
+  grupos(ficha).forEach(g => {
+    const comValor = g.campos.filter(f => preenchido(S.dados[f.id]) || f.required);
+    if (!comValor.length) return;
+    h += `<div class="passo" style="text-align:left;margin:14px 0 6px">${esc(g.nome)}</div>`;
+    comValor.forEach(f => {
+      const v = S.dados[f.id];
+      const vazio = !preenchido(v);
+      h += `<div class="resumo-linha">
+        <span class="k">${esc(f.label)}</span>
+        <span class="v ${vazio?'falta':''}">${vazio ? '— em branco' : esc(mostrar(v, f))}</span></div>`;
+    });
+  });
+  h += '</div>';
+  pinta(h);
+
+  rodape(`<button class="b" onclick="ir('coleta')">Voltar</button>
+          <button class="b pri" onclick="salvarCaso()">Salvar caso</button>`);
+}
+
+function mostrar(v, f){
+  if (Array.isArray(v)) return v.join(', ');
+  if (v === true) return 'Sim';
+  if (v === false) return 'Não';
+  if (f.type === 'date' && v) { const p = String(v).split('-'); return p.length===3 ? `${p[2]}/${p[1]}/${p[0]}` : v; }
+  return String(v) + (f.unit ? ' ' + f.unit : '');
+}
+
+function salvarCaso(){
+  const ficha = fichaAtual();
+  const casos = DB.casos(ficha.id);
+  const incompleto = ficha.schema.some(f => f.required && !preenchido(S.dados[f.id]));
+
+  if (S.editando){
+    const i = casos.findIndex(c => c.lid === S.editando);
+    if (i >= 0){
+      // reeditar um caso já enviado faz ele voltar para a fila
+      casos[i] = {...casos[i], data:{...S.dados}, incompleto, exportado_em:null, atualizado_em:hoje()};
+      DB.setCasos(ficha.id, casos);
+      toast('Caso atualizado — voltou para a fila de envio');
+    }
+  } else {
+    casos.push({
+      lid: uid(), num: casos.length + 1, data: {...S.dados},
+      incompleto, criado_em: hoje(), exportado_em: null
+    });
+    DB.setCasos(ficha.id, casos);
+    toast(incompleto ? 'Caso salvo (incompleto)' : 'Caso salvo');
+  }
+  DB.setRascunho(ficha.id, null);
+  ir('casos', {dados:{}, grupo:0, editando:null});
+}
+
+/* ══════════════════════════════════════════════════════════
+   ENVIO — gera CSV no formato que o "Importar CSV" do
+   ResearchHub já entende.
+
+   Os cabeçalhos são os rótulos exatos dos campos: o
+   autoMapHeaders do ResearchHub casa coluna com campo sozinho.
+   Os valores seguem o que o convertCSVVal espera —
+   Sim/Não, ponto decimal, multiselect separado por vírgula.
+   Sem BOM: o ResearchHub lê o texto direto, e um BOM sujaria
+   o primeiro cabeçalho e estragaria o pareamento automático.
+   ══════════════════════════════════════════════════════════ */
+function valorCSV(v, f){
+  if (v === null || v === undefined || v === '') return '';
+  if (Array.isArray(v)) return v.join(', ');
+  if (v === true) return 'Sim';
+  if (v === false) return 'Não';
+  return String(v);
+}
+function gerarCSV(ficha, casos){
+  const campos = [...ficha.schema].sort((a,b)=>(a.order??0)-(b.order??0));
+  const cit = c => '"' + String(c).replace(/"/g,'""') + '"';
+  const linhas = [campos.map(f => f.label)];
+  casos.forEach(c => linhas.push(campos.map(f => valorCSV(c.data[f.id], f))));
+  return linhas.map(l => l.map(cit).join(',')).join('\r\n');
+}
+
+function telaEnviar(){
+  const ficha = fichaAtual();
+  if (!ficha) return ir('fichas');
+  const todos = DB.casos(ficha.id);
+  const pend = todos.filter(c => !c.exportado_em);
+  const alvo = pend.length ? pend : todos;
+  const soPendentes = pend.length > 0;
+
+  cabecalho('Enviar', ficha.titulo);
+
+  let h = `<div class="card" style="text-align:center">
+      <div style="font-size:40px;font-weight:700;color:var(--teal);line-height:1">${alvo.length}</div>
+      <div style="font-size:14px;color:var(--tinta-2);margin-top:4px">
+        ${soPendentes ? `caso${alvo.length>1?'s':''} aguardando envio` : `caso${alvo.length>1?'s':''} (todos já enviados antes)`}
+      </div></div>`;
+
+  const incompletos = alvo.filter(c => c.incompleto).length;
+  if (incompletos){
+    h += `<div class="aviso a"><b>⚠️ ${incompletos} caso${incompletos>1?'s':''} com campo obrigatório em branco</b>
+      <span class="txt">Vão junto assim mesmo. Você completa no computador depois da importação.</span></div>`;
+  }
+
+  h += `<div class="aviso i"><b>No computador, depois</b>
+    <span class="txt">ResearchHub → card do estudo <b>${esc(ficha.titulo)}</b> → botão <b>Importar CSV</b>.
+    As colunas se pareiam sozinhas com os campos da ficha; você confere e confirma.
+    <br><br>Não use “Importar estudo” — aquele cria um estudo duplicado.</span></div>`;
+
+  h += `<button class="b pri" onclick="enviarCSV()" style="margin-bottom:10px">
+      📤 Gerar CSV e compartilhar</button>`;
+
+  if (!soPendentes && todos.length){
+    h += `<div class="ajuda" style="text-align:center;margin-bottom:14px">Reenviando os ${todos.length} casos. Cuidado: importar duas vezes cria duplicatas no computador.</div>`;
+  }
+
+  h += `<details style="margin-top:8px">
+      <summary style="font-size:14px;color:var(--tinta-3);padding:10px 0">Outras opções</summary>
+      <button class="b pequeno" onclick="enviarJSON()" style="margin-bottom:8px">Gerar .rhub.json (para o StatHub)</button>
+      <div class="ajuda">Formato de análise. Serve para o StatHub, <b>não</b> para importar de volta no ResearchHub.</div>
+      <button class="b pequeno" onclick="verCSV()" style="margin-top:12px">Ver o conteúdo do CSV</button>
+    </details>`;
+  pinta(h);
+  rodape(`<button class="b" onclick="ir('casos')">Voltar</button>`);
+}
+
+function casosParaEnviar(ficha){
+  const todos = DB.casos(ficha.id);
+  const pend = todos.filter(c => !c.exportado_em);
+  return pend.length ? pend : todos;
+}
+function nomeArquivo(ficha, ext){
+  return ficha.titulo.replace(/[^\p{L}\p{N}]+/gu,'_').replace(/^_|_$/g,'').slice(0,40)
+    + '_' + hoje() + '.' + ext;
+}
+
+async function enviarCSV(){
+  const ficha = fichaAtual();
+  const alvo = casosParaEnviar(ficha);
+  if (!alvo.length) return toast('Nenhum caso para enviar');
+  const csv = gerarCSV(ficha, alvo);
+  const r = await compartilhar(nomeArquivo(ficha,'csv'), csv, 'text/csv');
+  if (r === 'cancelado') return;
+  marcarEnviados(ficha, alvo);
+  toast(r === 'compartilhado' ? 'Enviado — marcados na lista' : 'Arquivo salvo');
+  ir('casos');
+}
+
+async function enviarJSON(){
+  const ficha = fichaAtual();
+  const alvo = casosParaEnviar(ficha);
+  const pkg = {
+    study:{id:ficha.id,title:ficha.titulo,area:ficha.area,status:'ativo',
+      description:'Coletado no ResearchHub Coleta (celular)',created_at:ficha.importada_em,updated_at:hoje()},
+    schema: ficha.schema,
+    records: alvo.map((c,i)=>({id:c.lid,number:i+1,data:c.data,created_at:c.criado_em,updated_at:c.criado_em})),
+    exported_at: hoje(), version:'1.0'
+  };
+  await compartilhar(nomeArquivo(ficha,'rhub.json'), JSON.stringify(pkg,null,1), 'application/json');
+}
+
+function marcarEnviados(ficha, alvo){
+  const ids = new Set(alvo.map(c => c.lid));
+  DB.setCasos(ficha.id, DB.casos(ficha.id).map(c => ids.has(c.lid) ? {...c, exportado_em: hoje()} : c));
+}
+
+/**
+ * No iPhone a folha de compartilhamento é o caminho natural — manda direto
+ * para WhatsApp, Mail ou Arquivos. Se não houver, cai para download, e em
+ * último caso mostra o texto para copiar.
+ */
+async function compartilhar(nome, conteudo, mime){
+  try{
+    const arq = new File([conteudo], nome, {type: mime});
+    if (navigator.canShare && navigator.canShare({files:[arq]})){
+      await navigator.share({files:[arq], title: nome});
+      return 'compartilhado';
+    }
+  }catch(e){
+    if (e && e.name === 'AbortError') return 'cancelado';
+  }
+  try{
+    const a = document.createElement('a');
+    const url = URL.createObjectURL(new Blob([conteudo], {type: mime}));
+    a.href = url; a.download = nome; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 5000);
+    return 'baixado';
+  }catch(e){
+    mostrarTexto(nome, conteudo);
+    return 'texto';
+  }
+}
+
+function verCSV(){
+  const ficha = fichaAtual();
+  mostrarTexto(nomeArquivo(ficha,'csv'), gerarCSV(ficha, casosParaEnviar(ficha)));
+}
+function mostrarTexto(nome, conteudo){
+  cabecalho('Conteúdo', nome);
+  pinta(`<div class="aviso i"><b>Copie e cole num arquivo .csv no computador</b>
+      <span class="txt">Use isto só se o compartilhamento não funcionar.</span></div>
+    <textarea class="entrada" style="min-height:50vh;font-family:ui-monospace,Menlo,monospace;font-size:12px"
+      readonly onclick="this.select()">${esc(conteudo)}</textarea>`);
+  rodape(`<button class="b" onclick="ir('enviar')">Voltar</button>
+    <button class="b pri" onclick="copiar(${JSON.stringify(nome)})">Copiar tudo</button>`);
+  window._texto = conteudo;
+}
+async function copiar(){
+  try{ await navigator.clipboard.writeText(window._texto||''); toast('Copiado'); }
+  catch(e){ toast('Selecione o texto e copie à mão'); }
+}
+
+/* ══════════════════════════════════════════════════════════
+   INÍCIO
+   ══════════════════════════════════════════════════════════ */
+window.addEventListener('beforeunload', salvarRascunho);
+document.addEventListener('visibilitychange', () => { if (document.hidden) salvarRascunho(); });
+
+if ('serviceWorker' in navigator){
+  window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(()=>{}));
+}
+
+render();
+</script>
+</body>
+</html>
